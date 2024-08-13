@@ -1,60 +1,33 @@
 from rest_framework import serializers
-from ghosted.models import *
+from projects.models import *
 
 
-class ProductImageSerializer(serializers.ModelSerializer):
+class ProjectImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ProductImages
-        fields = ['image']
+        model = ProjectImages
+        fields = ['images']
 
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['name']
-
-
-class ColourSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Colour
-        fields = ['name']
-
-
-class SizeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Size
-        fields = ['size']
-
-
-class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)
-    category = CategorySerializer()
-    size = SizeSerializer(many=True, read_only=True)
-    colour = ColourSerializer(many=True, read_only=True)
+class ProjectSerializer(serializers.ModelSerializer):
+    images = ProjectImageSerializer(many=True, read_only=True)
     upload_images = serializers.ListField(
         child=serializers.ImageField(max_length=1000000, allow_empty_file=False, use_url=False),
         write_only=True
     )
 
     class Meta:
-        model = Product
-        fields = ['id', 'name', 'description', 'materials', 'discount', 'size', 'slug', 'price', 'category', 'colour',
-                  'images', 'upload_images']
-        lookup_field = 'slug'
+        model = Project
+        fields = ['id', 'name', 'description', 'more_details', 'link', 'date', 'image', 'upload_images', 'images']
 
     def to_representation(self, instance):
         # Override the to_representation method to return size as a list of strings
         representation = super().to_representation(instance)
-        representation['size'] = [size['size'] for size in representation['size']]
-        representation['colour'] = [name['name'] for name in representation['colour']]
-        representation['images'] = [name['image'] for name in representation['images']]
+        representation['images'] = [name['images'] for name in representation['images']]
         return representation
 
     def create(self, validated_data):
         uploaded_images = validated_data.pop('uploaded_images')
-        product = Product.objects.create(**validated_data)
+        project = Project.objects.create(**validated_data)
         for image in uploaded_images:
-            new_product_image = ProductImages.objects.create(product=product, image=image)
-
-        return product
-
+            ProjectImages.objects.create(project=project, images=image)
+        return Project
